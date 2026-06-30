@@ -1,24 +1,22 @@
-﻿# 抖音自动刷视频，支持参数控制互动类型，按 Ctrl+C 停止
+﻿# 抖音自动刷视频，数字参数控制互动类型，按 Ctrl+C 停止
 # 用法:
-#   .\douyin_bot.ps1               默认 all（点赞+收藏+评论），自动滑动
-#   .\douyin_bot.ps1 like          只点赞
-#   .\douyin_bot.ps1 collect       只收藏
-#   .\douyin_bot.ps1 comment       只评论
-#   .\douyin_bot.ps1 like+collect  点赞+收藏
-#   .\douyin_bot.ps1 like+comment  点赞+评论
-#   .\douyin_bot.ps1 collect+comment 收藏+评论
-#   .\douyin_bot.ps1 all           点赞+收藏+评论
-#   .\douyin_bot.ps1 -NoSwipe      不自动滑动，只对当前视频操作
+#   .\douyin_bot.ps1 1      1=只点赞
+#   .\douyin_bot.ps1 2      2=只收藏
+#   .\douyin_bot.ps1 3      3=只评论
+#   .\douyin_bot.ps1 12     12=点赞+收藏
+#   .\douyin_bot.ps1 13     13=点赞+评论
+#   .\douyin_bot.ps1 23     23=收藏+评论
+#   .\douyin_bot.ps1 123    123=点赞+收藏+评论 (默认)
+#   .\douyin_bot.ps1 123 -NoSwipe  不自动滑动，只对当前视频操作
 
 param(
-    [ValidateSet("like","collect","comment","like+collect","like+comment","collect+comment","all")]
-    [string]$Mode = "all",
+    [string]$Mode = "123",
     [switch]$NoSwipe
 )
 
-$doLike = $Mode -match "like|all"
-$doCollect = $Mode -match "collect|all"
-$doComment = $Mode -match "comment|all"
+$doLike = $Mode.Contains("1")
+$doCollect = $Mode.Contains("2")
+$doComment = $Mode.Contains("3")
 
 # 右侧按钮坐标（1080x2388基准，脚本内会加随机偏移）
 $LIKE_X = 930; $LIKE_Y = 1350        # 点赞(心形图标)
