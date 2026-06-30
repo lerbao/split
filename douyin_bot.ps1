@@ -31,7 +31,7 @@ $LIKE_X = 998; $LIKE_Y = 1523        # 点赞按钮中心
 $COMMENT_X = 998; $COMMENT_Y = 1694  # 评论按钮中心
 $BOOKMARK_X = 997; $BOOKMARK_Y = 1863 # 收藏按钮中心
 $CENTER_X = 540; $CENTER_Y = 1200    # 屏幕中央(双击点赞用)
-$COMMENT_INPUT_X = 540; $COMMENT_INPUT_Y = 2280  # 评论输入框
+$COMMENT_INPUT_X = 387; $COMMENT_INPUT_Y = 2317  # 评论输入框中心
 $SEND_X = 982; $SEND_Y = 2206        # 发送按钮
 
 # 评论候选语料
@@ -106,6 +106,10 @@ function Do-Collect {
 }
 
 function Do-Comment {
+    # 先确保回到视频页（评论区可能已打开，点图标会关闭）
+    adb shell input keyevent BACK
+    Start-Sleep -Milliseconds 800
+
     $cx = RandomOffset $COMMENT_X 30
     $cy = RandomOffset $COMMENT_Y 30
     Write-Host "  >> 评论 - 点击评论图标 ($cx,$cy)"
