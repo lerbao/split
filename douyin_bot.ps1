@@ -53,16 +53,25 @@ function Swipe-Up {
 }
 
 function Do-Like {
-    # 双击屏幕中央点赞
+    # 观看一段随机时间后再点赞
+    $watch = Get-Random -Minimum 3 -Maximum 8
+    Write-Host "  >> 观看 ${watch}s 后点赞..."
+    Start-Sleep -Seconds $watch
+
     $x = RandomOffset $CENTER_X 100
     $y = RandomOffset $CENTER_Y 150
     Write-Host "  >> 点赞 (双击 $x,$y)"
     adb shell input tap $x $y
-    Start-Sleep -Milliseconds (Get-Random -Minimum 80 -Maximum 150)
+    Start-Sleep -Milliseconds (Get-Random -Minimum 100 -Maximum 200)
     adb shell input tap $x $y
 }
 
 function Do-Collect {
+    # 观看一段随机时间后再收藏
+    $watch = Get-Random -Minimum 3 -Maximum 8
+    Write-Host "  >> 观看 ${watch}s 后收藏..."
+    Start-Sleep -Seconds $watch
+
     $x = RandomOffset $BOOKMARK_X 30
     $y = RandomOffset $BOOKMARK_Y 30
     Write-Host "  >> 收藏 ($x,$y)"
@@ -70,36 +79,46 @@ function Do-Collect {
 }
 
 function Do-Comment {
+    # 观看一段随机时间后再评论
+    $watch = Get-Random -Minimum 4 -Maximum 10
+    Write-Host "  >> 观看 ${watch}s 后评论..."
+    Start-Sleep -Seconds $watch
+
     # 1. 点击评论图标
     $cx = RandomOffset $COMMENT_X 30
     $cy = RandomOffset $COMMENT_Y 30
     Write-Host "  >> 评论 - 点击评论图标 ($cx,$cy)"
     adb shell input tap $cx $cy
-    Start-Sleep -Seconds 1
+    $d1 = Get-Random -Minimum 800 -Maximum 1500
+    Start-Sleep -Milliseconds $d1
 
     # 2. 点击输入框
     $ix = RandomOffset $COMMENT_INPUT_X 100
     $iy = RandomOffset $COMMENT_INPUT_Y 30
     Write-Host "  >> 评论 - 点击输入框 ($ix,$iy)"
     adb shell input tap $ix $iy
-    Start-Sleep -Milliseconds 500
+    $d2 = Get-Random -Minimum 400 -Maximum 800
+    Start-Sleep -Milliseconds $d2
 
     # 3. 输入随机评论（通过 ADBKeyboard 广播支持中文）
     $text = Get-Random -InputObject $comments
     Write-Host "  >> 评论 - 输入: $text"
     adb shell am broadcast -a ADB_INPUT_TEXT --es msg $text
-    Start-Sleep -Milliseconds 300
+    $d3 = Get-Random -Minimum 500 -Maximum 1200
+    Start-Sleep -Milliseconds $d3
 
     # 4. 点击发送
     $sx = RandomOffset $SEND_X 30
     $sy = RandomOffset $SEND_Y 30
     Write-Host "  >> 评论 - 发送 ($sx,$sy)"
     adb shell input tap $sx $sy
-    Start-Sleep -Seconds 1
+    $d4 = Get-Random -Minimum 800 -Maximum 1500
+    Start-Sleep -Milliseconds $d4
 
     # 5. 返回视频界面
     adb shell input keyevent BACK
-    Start-Sleep -Milliseconds 500
+    $d5 = Get-Random -Minimum 400 -Maximum 800
+    Start-Sleep -Milliseconds $d5
 }
 
 $count = 0
@@ -112,7 +131,9 @@ while ($true) {
 
     # 先滑动到下一个视频
     Swipe-Up
-    Start-Sleep -Seconds 2  # 等视频加载
+    $loadWait = Get-Random -Minimum 1 -Maximum 4
+    Write-Host "  >> 等待视频加载 ${loadWait}s..."
+    Start-Sleep -Seconds $loadWait
 
     switch ($action) {
         "like"    { Do-Like }
