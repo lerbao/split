@@ -135,11 +135,7 @@ function Do-Comment {
     Write-Host "  >> 等待输入完成 ${d3}ms..."
     Start-Sleep -Milliseconds $d3
 
-    Write-Host "  >> 切换输入法回搜狗..."
-    adb shell ime enable com.yushixing.accessibility/com.sohu.inputmethod.sogou.TrimeIME
-    adb shell ime set com.yushixing.accessibility/com.sohu.inputmethod.sogou.TrimeIME
-    Start-Sleep -Milliseconds 500
-
+    # 先点发送（此时ADBKeyboard还在，发送按钮可见）
     $sx = RandomOffset $SEND_X 30
     $sy = RandomOffset $SEND_Y 30
     Write-Host "  >> 评论 - 发送 ($sx,$sy)"
@@ -147,6 +143,12 @@ function Do-Comment {
     $d4 = Get-Random -Minimum 1500 -Maximum 2500
     Write-Host "  >> 等待发送完成 ${d4}ms..."
     Start-Sleep -Milliseconds $d4
+
+    # 发送后再切回搜狗输入法
+    Write-Host "  >> 切换输入法回搜狗..."
+    adb shell ime enable com.yushixing.accessibility/com.sohu.inputmethod.sogou.TrimeIME
+    adb shell ime set com.yushixing.accessibility/com.sohu.inputmethod.sogou.TrimeIME
+    Start-Sleep -Milliseconds 300
 
     adb shell input keyevent BACK
     $d5 = Get-Random -Minimum 800 -Maximum 1500
