@@ -38,25 +38,17 @@ function Swipe-Up {
 }
 
 function Is-LiveStream {
-    # 方法1: 通过 dumpsys window 检测当前窗口标题是否含"直播"
+    # 方法1: dumpsys activity 检测 LivePlayActivity（直播专用Activity）
     try {
-        $win = adb shell dumpsys window windows 2>$null | Out-String
-        if ($win -match 'mCurrentFocus.*直播') {
+        $act = adb shell "dumpsys activity activities 2>/dev/null" 2>$null | Out-String
+        if ($act -match 'LivePlayActivity' -or $act -match '\.live\.') {
             return $true
         }
     } catch {}
 
-    # 方法2: 通过 dumpsys activity 检测当前 activity
+    # 方法2: uiautomator dump 检测"直播"文字（备用）
     try {
-        $act = adb shell "dumpsys activity activities 2>/dev/null | grep topResumedActivity" 2>$null | Out-String
-        if ($act -match '直播') {
-            return $true
-        }
-    } catch {}
-
-    # 方法3: 通过 uiautomator dump 检测
-    try {
-        adb shell uiautomator dump /sdcard/live_check.xml 2>$null | Out-Null
+        $null = adb shell uiautomator dump /sdcard/live_check.xml 2>$null
         $xml = adb shell cat /sdcard/live_check.xml 2>$null | Out-String
         if ($xml -match '"直播"') {
             return $true
