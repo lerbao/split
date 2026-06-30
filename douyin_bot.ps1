@@ -1,4 +1,23 @@
-﻿# 抖音自动刷视频：点赞→收藏→评论，直播自动跳过，按 Ctrl+C 停止
+﻿# 抖音自动刷视频，支持参数控制互动类型，按 Ctrl+C 停止
+# 用法:
+#   .\douyin_bot.ps1               默认 all（点赞+收藏+评论）
+#   .\douyin_bot.ps1 like          只点赞
+#   .\douyin_bot.ps1 collect       只收藏
+#   .\douyin_bot.ps1 comment       只评论
+#   .\douyin_bot.ps1 like+collect  点赞+收藏
+#   .\douyin_bot.ps1 like+comment  点赞+评论
+#   .\douyin_bot.ps1 collect+comment 收藏+评论
+#   .\douyin_bot.ps1 all           点赞+收藏+评论
+
+param(
+    [ValidateSet("like","collect","comment","like+collect","like+comment","collect+comment","all")]
+    [string]$Mode = "all"
+)
+
+$doLike = $Mode -match "like|all"
+$doCollect = $Mode -match "collect|all"
+$doComment = $Mode -match "comment|all"
+
 # 右侧按钮坐标（1080x2388基准，脚本内会加随机偏移）
 $LIKE_X = 930; $LIKE_Y = 1350        # 点赞(心形图标)
 $COMMENT_X = 930; $COMMENT_Y = 1580  # 评论图标
@@ -16,9 +35,16 @@ $comments = @(
     "可以互相关注吗？"
 )
 
+# 构建流程描述
+$flowDesc = @()
+if ($doLike) { $flowDesc += "点赞" }
+if ($doCollect) { $flowDesc += "收藏" }
+if ($doComment) { $flowDesc += "评论" }
+$flowStr = $flowDesc -join " -> "
+
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  抖音自动刷视频 Bot 启动" -ForegroundColor Cyan
-Write-Host "  流程: 点赞 -> 2~5s -> 收藏 -> 3~7s -> 评论" -ForegroundColor Cyan
+Write-Host "  模式: $Mode ($flowStr)" -ForegroundColor Cyan
 Write-Host "  直播自动检测并跳过" -ForegroundColor Cyan
 Write-Host "  按 Ctrl+C 停止" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
@@ -38,23 +64,19 @@ function Swipe-Up {
 }
 
 function Is-LiveStream {
-    # 方法1: dumpsys activity 检测 LivePlayActivity（直播专用Activity）
+    # 方法1: dumpsys activity 检测 LivePlayActivity
     try {
         $act = adb shell "dumpsys activity activities 2>/dev/null" 2>$null | Out-String
         if ($act -match 'LivePlayActivity' -or $act -match '\.live\.') {
             return $true
         }
     } catch {}
-
-    # 方法2: uiautomator dump 检测"直播"文字（备用）
+    # 方法2: uiautomator dump 检测"直播"文字
     try {
         $null = adb shell uiautomator dump /sdcard/live_check.xml 2>$null
         $xml = adb shell cat /sdcard/live_check.xml 2>$null | Out-String
-        if ($xml -match '"直播"') {
-            return $true
-        }
+        if ($xml -match '"直播"') { return $true }
     } catch {}
-
     return $false
 }
 
@@ -75,7 +97,6 @@ function Do-Collect {
 }
 
 function Do-Comment {
-    # 1. 点击评论图标
     $cx = RandomOffset $COMMENT_X 30
     $cy = RandomOffset $COMMENT_Y 30
     Write-Host "  >> 评论 - 点击评论图标 ($cx,$cy)"
@@ -84,7 +105,6 @@ function Do-Comment {
     Write-Host "  >> 等待评论区打开 ${d1}ms..."
     Start-Sleep -Milliseconds $d1
 
-    # 2. 点击输入框
     $ix = RandomOffset $COMMENT_INPUT_X 100
     $iy = RandomOffset $COMMENT_INPUT_Y 30
     Write-Host "  >> 评论 - 点击输入框 ($ix,$iy)"
@@ -93,7 +113,6 @@ function Do-Comment {
     Write-Host "  >> 等待键盘弹出 ${d2}ms..."
     Start-Sleep -Milliseconds $d2
 
-    # 3. 输入随机评论（通过 ADBKeyboard 广播支持中文）
     $text = Get-Random -InputObject $comments
     Write-Host "  >> 评论 - 输入: $text"
     adb shell am broadcast -a ADB_INPUT_TEXT --es msg $text
@@ -101,7 +120,6 @@ function Do-Comment {
     Write-Host "  >> 等待输入完成 ${d3}ms..."
     Start-Sleep -Milliseconds $d3
 
-    # 4. 点击发送
     $sx = RandomOffset $SEND_X 30
     $sy = RandomOffset $SEND_Y 30
     Write-Host "  >> 评论 - 发送 ($sx,$sy)"
@@ -110,7 +128,6 @@ function Do-Comment {
     Write-Host "  >> 等待发送完成 ${d4}ms..."
     Start-Sleep -Milliseconds $d4
 
-    # 5. 返回视频界面
     adb shell input keyevent BACK
     $d5 = Get-Random -Minimum 800 -Maximum 1500
     Write-Host "  >> 等待返回 ${d5}ms..."
@@ -122,13 +139,13 @@ while ($true) {
     $count++
     Write-Host "[$count] $(Get-Date -Format 'HH:mm:ss')" -ForegroundColor Yellow
 
-    # 1. 滑动到下一个视频
+    # 滑动到下一个视频
     Swipe-Up
     $loadWait = Get-Random -Minimum 2 -Maximum 5
     Write-Host "  >> 等待视频加载 ${loadWait}s..."
     Start-Sleep -Seconds $loadWait
 
-    # 2. 检测是否直播
+    # 检测直播
     Write-Host "  >> 检测直播..."
     if (Is-LiveStream) {
         Write-Host "  >> 检测到直播，跳过，立即划走" -ForegroundColor Red
@@ -138,18 +155,22 @@ while ($true) {
     }
     Write-Host "  >> 正常视频" -ForegroundColor Green
 
-    # 3. 点赞
-    Do-Like
+    $actions = @()
+    if ($doLike) { $actions += "like" }
+    if ($doCollect) { $actions += "collect" }
+    if ($doComment) { $actions += "comment" }
 
-    # 4. 等待 2~5s 后收藏
-    $wait1 = Get-Random -Minimum 2 -Maximum 6
-    Write-Host "  >> 等待 ${wait1}s 后收藏..."
-    Start-Sleep -Seconds $wait1
-    Do-Collect
-
-    # 5. 等待 3~7s 后评论
-    $wait2 = Get-Random -Minimum 3 -Maximum 8
-    Write-Host "  >> 等待 ${wait2}s 后评论..."
-    Start-Sleep -Seconds $wait2
-    Do-Comment
+    for ($i = 0; $i -lt $actions.Count; $i++) {
+        switch ($actions[$i]) {
+            "like"    { Do-Like }
+            "collect" { Do-Collect }
+            "comment" { Do-Comment }
+        }
+        # 不是最后一个动作时，随机等待
+        if ($i -lt $actions.Count - 1) {
+            $wait = Get-Random -Minimum 2 -Maximum 8
+            Write-Host "  >> 等待 ${wait}s 后执行下一个动作..."
+            Start-Sleep -Seconds $wait
+        }
+    }
 }
