@@ -38,16 +38,31 @@ function Swipe-Up {
 }
 
 function Is-LiveStream {
-    # 通过 uiautomator dump 检测是否有“直播”文字
+    # 方法1: 通过 dumpsys window 检测当前窗口标题是否含"直播"
     try {
-        $xml = adb exec-out uiautomator dump /dev/tty 2>$null | Out-String
-        if ($xml -match '直播') {
+        $win = adb shell dumpsys window windows 2>$null | Out-String
+        if ($win -match 'mCurrentFocus.*直播') {
             return $true
         }
-    } catch {
-        # 如果 dump 失败，保守判断为视频
-        return $false
-    }
+    } catch {}
+
+    # 方法2: 通过 dumpsys activity 检测当前 activity
+    try {
+        $act = adb shell "dumpsys activity activities 2>/dev/null | grep topResumedActivity" 2>$null | Out-String
+        if ($act -match '直播') {
+            return $true
+        }
+    } catch {}
+
+    # 方法3: 通过 uiautomator dump 检测
+    try {
+        adb shell uiautomator dump /sdcard/live_check.xml 2>$null | Out-Null
+        $xml = adb shell cat /sdcard/live_check.xml 2>$null | Out-String
+        if ($xml -match '"直播"') {
+            return $true
+        }
+    } catch {}
+
     return $false
 }
 
@@ -73,7 +88,8 @@ function Do-Comment {
     $cy = RandomOffset $COMMENT_Y 30
     Write-Host "  >> 评论 - 点击评论图标 ($cx,$cy)"
     adb shell input tap $cx $cy
-    $d1 = Get-Random -Minimum 800 -Maximum 1500
+    $d1 = Get-Random -Minimum 1500 -Maximum 2500
+    Write-Host "  >> 等待评论区打开 ${d1}ms..."
     Start-Sleep -Milliseconds $d1
 
     # 2. 点击输入框
@@ -81,14 +97,16 @@ function Do-Comment {
     $iy = RandomOffset $COMMENT_INPUT_Y 30
     Write-Host "  >> 评论 - 点击输入框 ($ix,$iy)"
     adb shell input tap $ix $iy
-    $d2 = Get-Random -Minimum 400 -Maximum 800
+    $d2 = Get-Random -Minimum 800 -Maximum 1500
+    Write-Host "  >> 等待键盘弹出 ${d2}ms..."
     Start-Sleep -Milliseconds $d2
 
     # 3. 输入随机评论（通过 ADBKeyboard 广播支持中文）
     $text = Get-Random -InputObject $comments
     Write-Host "  >> 评论 - 输入: $text"
     adb shell am broadcast -a ADB_INPUT_TEXT --es msg $text
-    $d3 = Get-Random -Minimum 500 -Maximum 1200
+    $d3 = Get-Random -Minimum 1000 -Maximum 2000
+    Write-Host "  >> 等待输入完成 ${d3}ms..."
     Start-Sleep -Milliseconds $d3
 
     # 4. 点击发送
@@ -96,12 +114,14 @@ function Do-Comment {
     $sy = RandomOffset $SEND_Y 30
     Write-Host "  >> 评论 - 发送 ($sx,$sy)"
     adb shell input tap $sx $sy
-    $d4 = Get-Random -Minimum 800 -Maximum 1500
+    $d4 = Get-Random -Minimum 1500 -Maximum 2500
+    Write-Host "  >> 等待发送完成 ${d4}ms..."
     Start-Sleep -Milliseconds $d4
 
     # 5. 返回视频界面
     adb shell input keyevent BACK
-    $d5 = Get-Random -Minimum 400 -Maximum 800
+    $d5 = Get-Random -Minimum 800 -Maximum 1500
+    Write-Host "  >> 等待返回 ${d5}ms..."
     Start-Sleep -Milliseconds $d5
 }
 
@@ -112,16 +132,19 @@ while ($true) {
 
     # 1. 滑动到下一个视频
     Swipe-Up
-    $loadWait = Get-Random -Minimum 1 -Maximum 4
+    $loadWait = Get-Random -Minimum 2 -Maximum 5
     Write-Host "  >> 等待视频加载 ${loadWait}s..."
     Start-Sleep -Seconds $loadWait
 
     # 2. 检测是否直播
     Write-Host "  >> 检测直播..."
     if (Is-LiveStream) {
-        Write-Host "  >> 检测到直播，跳过" -ForegroundColor Red
+        Write-Host "  >> 检测到直播，跳过，立即划走" -ForegroundColor Red
+        Swipe-Up
+        Start-Sleep -Seconds 2
         continue
     }
+    Write-Host "  >> 正常视频" -ForegroundColor Green
 
     # 3. 点赞
     Do-Like
