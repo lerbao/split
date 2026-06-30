@@ -106,10 +106,6 @@ function Do-Collect {
 }
 
 function Do-Comment {
-    # 先确保回到视频页（评论区可能已打开，点图标会关闭）
-    adb shell input keyevent BACK
-    Start-Sleep -Milliseconds 800
-
     $cx = RandomOffset $COMMENT_X 30
     $cy = RandomOffset $COMMENT_Y 30
     Write-Host "  >> 评论 - 点击评论图标 ($cx,$cy)"
