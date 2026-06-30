@@ -135,14 +135,19 @@ function Do-Comment {
     Write-Host "  >> 等待输入完成 ${d3}ms..."
     Start-Sleep -Milliseconds $d3
 
-    # 先点发送（此时ADBKeyboard还在，发送按钮可见）
-    $sx = RandomOffset $SEND_X 30
-    $sy = RandomOffset $SEND_Y 30
-    Write-Host "  >> 评论 - 发送 ($sx,$sy)"
-    adb shell input tap $sx $sy
-    $d4 = Get-Random -Minimum 1500 -Maximum 2500
+    # 方式1：ADBKeyboard回车键发送
+    Write-Host "  >> 评论 - 发送 (回车键)"
+    adb shell am broadcast -a ADB_INPUT_CODE --ei code 66
+    $d4 = Get-Random -Minimum 800 -Maximum 1500
     Write-Host "  >> 等待发送完成 ${d4}ms..."
     Start-Sleep -Milliseconds $d4
+
+    # 方式2：如果回车没生效，点发送按钮
+    $sx = RandomOffset $SEND_X 30
+    $sy = RandomOffset $SEND_Y 30
+    Write-Host "  >> 评论 - 备用发送按钮 ($sx,$sy)"
+    adb shell input tap $sx $sy
+    Start-Sleep -Milliseconds 1500
 
     # 发送后再切回搜狗输入法
     Write-Host "  >> 切换输入法回搜狗..."
