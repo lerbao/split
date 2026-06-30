@@ -8,3 +8,11 @@ Desktop.ini
 
 # Logs
 *.log
+
+# IDE history
+.history/
+
+# APK / Zip
+*.zip
+*.apk
+ADBKeyBoard-master/
