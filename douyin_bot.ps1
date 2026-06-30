@@ -1,4 +1,4 @@
-﻿# 抖音自动刷视频+随机互动脚本，按 Ctrl+C 停止
+﻿# 抖音自动刷视频：点赞→收藏→评论，直播自动跳过，按 Ctrl+C 停止
 # 右侧按钮坐标（1080x2388基准，脚本内会加随机偏移）
 $LIKE_X = 930; $LIKE_Y = 1350        # 点赞(心形图标)
 $COMMENT_X = 930; $COMMENT_Y = 1580  # 评论图标
@@ -16,15 +16,10 @@ $comments = @(
     "可以互相关注吗？"
 )
 
-# 滑动间隔：10~15s随机
-$intervals = @(10, 11, 12, 13, 14, 15)
-
-# 动作概率权重：like=40, collect=15, comment=10, skip=35
-$actions = @("like") * 40 + @("collect") * 15 + @("comment") * 10 + @("skip") * 35
-
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  抖音自动刷视频 Bot 启动" -ForegroundColor Cyan
-Write-Host "  动作: 点赞40% | 收藏15% | 评论10% | 跳过35%" -ForegroundColor Cyan
+Write-Host "  流程: 点赞 -> 2~5s -> 收藏 -> 3~7s -> 评论" -ForegroundColor Cyan
+Write-Host "  直播自动检测并跳过" -ForegroundColor Cyan
 Write-Host "  按 Ctrl+C 停止" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
@@ -42,12 +37,21 @@ function Swipe-Up {
     adb shell input swipe $x1 $y1 $x2 $y2 $dur
 }
 
-function Do-Like {
-    # 观看一段随机时间后再点赞
-    $watch = Get-Random -Minimum 3 -Maximum 8
-    Write-Host "  >> 观看 ${watch}s 后点赞..."
-    Start-Sleep -Seconds $watch
+function Is-LiveStream {
+    # 通过 uiautomator dump 检测是否有“直播”文字
+    try {
+        $xml = adb exec-out uiautomator dump /dev/tty 2>$null | Out-String
+        if ($xml -match '直播') {
+            return $true
+        }
+    } catch {
+        # 如果 dump 失败，保守判断为视频
+        return $false
+    }
+    return $false
+}
 
+function Do-Like {
     $x = RandomOffset $CENTER_X 100
     $y = RandomOffset $CENTER_Y 150
     Write-Host "  >> 点赞 (双击 $x,$y)"
@@ -57,11 +61,6 @@ function Do-Like {
 }
 
 function Do-Collect {
-    # 观看一段随机时间后再收藏
-    $watch = Get-Random -Minimum 3 -Maximum 8
-    Write-Host "  >> 观看 ${watch}s 后收藏..."
-    Start-Sleep -Seconds $watch
-
     $x = RandomOffset $BOOKMARK_X 30
     $y = RandomOffset $BOOKMARK_Y 30
     Write-Host "  >> 收藏 ($x,$y)"
@@ -69,11 +68,6 @@ function Do-Collect {
 }
 
 function Do-Comment {
-    # 观看一段随机时间后再评论
-    $watch = Get-Random -Minimum 4 -Maximum 10
-    Write-Host "  >> 观看 ${watch}s 后评论..."
-    Start-Sleep -Seconds $watch
-
     # 1. 点击评论图标
     $cx = RandomOffset $COMMENT_X 30
     $cy = RandomOffset $COMMENT_Y 30
@@ -114,23 +108,33 @@ function Do-Comment {
 $count = 0
 while ($true) {
     $count++
-    $action = Get-Random -InputObject $actions
-    $delay = Get-Random -InputObject $intervals
+    Write-Host "[$count] $(Get-Date -Format 'HH:mm:ss')" -ForegroundColor Yellow
 
-    Write-Host "[$count] $(Get-Date -Format 'HH:mm:ss') 动作=$action | 间隔=${delay}s" -ForegroundColor Yellow
-
-    # 先滑动到下一个视频
+    # 1. 滑动到下一个视频
     Swipe-Up
     $loadWait = Get-Random -Minimum 1 -Maximum 4
     Write-Host "  >> 等待视频加载 ${loadWait}s..."
     Start-Sleep -Seconds $loadWait
 
-    switch ($action) {
-        "like"    { Do-Like }
-        "collect" { Do-Collect }
-        "comment" { Do-Comment }
-        "skip"    { Write-Host "  >> 跳过" }
+    # 2. 检测是否直播
+    Write-Host "  >> 检测直播..."
+    if (Is-LiveStream) {
+        Write-Host "  >> 检测到直播，跳过" -ForegroundColor Red
+        continue
     }
 
-    Start-Sleep -Seconds $delay
+    # 3. 点赞
+    Do-Like
+
+    # 4. 等待 2~5s 后收藏
+    $wait1 = Get-Random -Minimum 2 -Maximum 6
+    Write-Host "  >> 等待 ${wait1}s 后收藏..."
+    Start-Sleep -Seconds $wait1
+    Do-Collect
+
+    # 5. 等待 3~7s 后评论
+    $wait2 = Get-Random -Minimum 3 -Maximum 8
+    Write-Host "  >> 等待 ${wait2}s 后评论..."
+    Start-Sleep -Seconds $wait2
+    Do-Comment
 }
