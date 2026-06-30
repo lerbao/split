@@ -1,18 +1,26 @@
 ﻿# 抖音自动刷视频，数字参数控制互动类型，按 Ctrl+C 停止
 # 用法:
-#   .\douyin_bot.ps1 1      1=只点赞
-#   .\douyin_bot.ps1 2      2=只收藏
-#   .\douyin_bot.ps1 3      3=只评论
-#   .\douyin_bot.ps1 12     12=点赞+收藏
-#   .\douyin_bot.ps1 13     13=点赞+评论
-#   .\douyin_bot.ps1 23     23=收藏+评论
-#   .\douyin_bot.ps1 123    123=点赞+收藏+评论 (默认)
-#   .\douyin_bot.ps1 123 -NoSwipe  不自动滑动，只对当前视频操作
+#   1=点赞  2=收藏  3=评论  自由组合  s=不滑动
+#   .\douyin_bot.ps1 1       只点赞
+#   .\douyin_bot.ps1 2       只收藏
+#   .\douyin_bot.ps1 3       只评论
+#   .\douyin_bot.ps1 12      点赞+收藏
+#   .\douyin_bot.ps1 13      点赞+评论
+#   .\douyin_bot.ps1 23      收藏+评论
+#   .\douyin_bot.ps1 123     点赞+收藏+评论 (默认)
+#   .\douyin_bot.ps1 123s    同上，不自动滑动
+#   .\douyin_bot.ps1 1s      只点赞，不滑动
 
 param(
     [string]$Mode = "123",
     [switch]$NoSwipe
 )
+
+# 末尾带 s 表示不滑动
+if ($Mode -match 's$') {
+    $Mode = $Mode -replace 's$', ''
+    $NoSwipe = $true
+}
 
 $doLike = $Mode.Contains("1")
 $doCollect = $Mode.Contains("2")
