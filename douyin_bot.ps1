@@ -1,11 +1,11 @@
 # 抖音自动刷视频+随机互动脚本，按 Ctrl+C 停止
-# 右侧按钮坐标（1080x2400基准，脚本内会加随机偏移）
-$LIKE_X = 930; $LIKE_Y = 1300       # 点赞(心形图标)
-$COMMENT_X = 930; $COMMENT_Y = 1550  # 评论图标
-$BOOKMARK_X = 930; $BOOKMARK_Y = 1780 # 收藏图标
+# 右侧按钮坐标（1080x2388基准，脚本内会加随机偏移）
+$LIKE_X = 930; $LIKE_Y = 1350        # 点赞(心形图标)
+$COMMENT_X = 930; $COMMENT_Y = 1580  # 评论图标
+$BOOKMARK_X = 930; $BOOKMARK_Y = 1820 # 收藏图标
 $CENTER_X = 540; $CENTER_Y = 1200    # 屏幕中央(双击点赞用)
-$COMMENT_INPUT_X = 540; $COMMENT_INPUT_Y = 2200  # 评论输入框
-$SEND_X = 980; $SEND_Y = 2200        # 发送按钮
+$COMMENT_INPUT_X = 540; $COMMENT_INPUT_Y = 2280  # 评论输入框
+$SEND_X = 980; $SEND_Y = 2280        # 发送按钮
 
 # 评论候选语料
 $comments = @(
@@ -84,11 +84,10 @@ function Do-Comment {
     adb shell input tap $ix $iy
     Start-Sleep -Milliseconds 500
 
-    # 3. 输入随机评论
+    # 3. 输入随机评论（通过 ADBKeyboard 广播支持中文）
     $text = Get-Random -InputObject $comments
     Write-Host "  >> 评论 - 输入: $text"
-    # 中文输入需用 ADBKeyboard 或 broadcast，这里用 input text 尝试
-    adb shell input text $text
+    adb shell am broadcast -a ADB_INPUT_TEXT --es msg $text
     Start-Sleep -Milliseconds 300
 
     # 4. 点击发送
