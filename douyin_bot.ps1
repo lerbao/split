@@ -26,13 +26,13 @@ $doLike = $Mode.Contains("1")
 $doCollect = $Mode.Contains("2")
 $doComment = $Mode.Contains("3")
 
-# 右侧按钮坐标（1080x2388基准，脚本内会加随机偏移）
-$LIKE_X = 930; $LIKE_Y = 1350        # 点赞(心形图标)
-$COMMENT_X = 930; $COMMENT_Y = 1580  # 评论图标
-$BOOKMARK_X = 930; $BOOKMARK_Y = 1820 # 收藏图标
+# 右侧按钮坐标（通过uiautomator dump获取的实际坐标）
+$LIKE_X = 998; $LIKE_Y = 1523        # 点赞按钮中心
+$COMMENT_X = 998; $COMMENT_Y = 1694  # 评论按钮中心
+$BOOKMARK_X = 997; $BOOKMARK_Y = 1863 # 收藏按钮中心
 $CENTER_X = 540; $CENTER_Y = 1200    # 屏幕中央(双击点赞用)
 $COMMENT_INPUT_X = 540; $COMMENT_INPUT_Y = 2280  # 评论输入框
-$SEND_X = 980; $SEND_Y = 2280        # 发送按钮
+$SEND_X = 982; $SEND_Y = 2206        # 发送按钮
 
 # 评论候选语料
 $comments = @(
@@ -122,12 +122,23 @@ function Do-Comment {
     Write-Host "  >> 等待键盘弹出 ${d2}ms..."
     Start-Sleep -Milliseconds $d2
 
+    # 切换到ADBKeyboard，输入后切回搜狗
+    Write-Host "  >> 切换输入法到ADBKeyboard..."
+    adb shell ime enable com.android.adbkeyboard/.AdbIME
+    adb shell ime set com.android.adbkeyboard/.AdbIME
+    Start-Sleep -Milliseconds 500
+
     $text = Get-Random -InputObject $comments
     Write-Host "  >> 评论 - 输入: $text"
     adb shell am broadcast -a ADB_INPUT_TEXT --es msg $text
     $d3 = Get-Random -Minimum 1000 -Maximum 2000
     Write-Host "  >> 等待输入完成 ${d3}ms..."
     Start-Sleep -Milliseconds $d3
+
+    Write-Host "  >> 切换输入法回搜狗..."
+    adb shell ime enable com.yushixing.accessibility/com.sohu.inputmethod.sogou.TrimeIME
+    adb shell ime set com.yushixing.accessibility/com.sohu.inputmethod.sogou.TrimeIME
+    Start-Sleep -Milliseconds 500
 
     $sx = RandomOffset $SEND_X 30
     $sy = RandomOffset $SEND_Y 30
