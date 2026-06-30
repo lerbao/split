@@ -177,11 +177,16 @@ while ($true) {
             "collect" { Do-Collect }
             "comment" { Do-Comment }
         }
-        # 不是最后一个动作时，随机等待
         if ($i -lt $actions.Count - 1) {
             $wait = Get-Random -Minimum 2 -Maximum 8
             Write-Host "  >> 等待 ${wait}s 后执行下一个动作..."
             Start-Sleep -Seconds $wait
         }
+    }
+
+    # s 模式只执行一次就退出
+    if ($NoSwipe) {
+        Write-Host "  >> 完成，退出" -ForegroundColor Green
+        break
     }
 }
