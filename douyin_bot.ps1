@@ -1,6 +1,6 @@
 ﻿# 抖音自动刷视频，支持参数控制互动类型，按 Ctrl+C 停止
 # 用法:
-#   .\douyin_bot.ps1               默认 all（点赞+收藏+评论）
+#   .\douyin_bot.ps1               默认 all（点赞+收藏+评论），自动滑动
 #   .\douyin_bot.ps1 like          只点赞
 #   .\douyin_bot.ps1 collect       只收藏
 #   .\douyin_bot.ps1 comment       只评论
@@ -8,10 +8,12 @@
 #   .\douyin_bot.ps1 like+comment  点赞+评论
 #   .\douyin_bot.ps1 collect+comment 收藏+评论
 #   .\douyin_bot.ps1 all           点赞+收藏+评论
+#   .\douyin_bot.ps1 -NoSwipe      不自动滑动，只对当前视频操作
 
 param(
     [ValidateSet("like","collect","comment","like+collect","like+comment","collect+comment","all")]
-    [string]$Mode = "all"
+    [string]$Mode = "all",
+    [switch]$NoSwipe
 )
 
 $doLike = $Mode -match "like|all"
@@ -45,6 +47,7 @@ $flowStr = $flowDesc -join " -> "
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  抖音自动刷视频 Bot 启动" -ForegroundColor Cyan
 Write-Host "  模式: $Mode ($flowStr)" -ForegroundColor Cyan
+Write-Host "  自动滑动: $(if ($NoSwipe) {'关'} else {'开'})" -ForegroundColor Cyan
 Write-Host "  直播自动检测并跳过" -ForegroundColor Cyan
 Write-Host "  按 Ctrl+C 停止" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
@@ -139,21 +142,23 @@ while ($true) {
     $count++
     Write-Host "[$count] $(Get-Date -Format 'HH:mm:ss')" -ForegroundColor Yellow
 
-    # 滑动到下一个视频
-    Swipe-Up
-    $loadWait = Get-Random -Minimum 2 -Maximum 5
-    Write-Host "  >> 等待视频加载 ${loadWait}s..."
-    Start-Sleep -Seconds $loadWait
-
-    # 检测直播
-    Write-Host "  >> 检测直播..."
-    if (Is-LiveStream) {
-        Write-Host "  >> 检测到直播，跳过，立即划走" -ForegroundColor Red
+    # 滑动到下一个视频（-NoSwipe 时跳过）
+    if (-not $NoSwipe) {
         Swipe-Up
-        Start-Sleep -Seconds 2
-        continue
+        $loadWait = Get-Random -Minimum 2 -Maximum 5
+        Write-Host "  >> 等待视频加载 ${loadWait}s..."
+        Start-Sleep -Seconds $loadWait
+
+        # 检测直播
+        Write-Host "  >> 检测直播..."
+        if (Is-LiveStream) {
+            Write-Host "  >> 检测到直播，跳过，立即划走" -ForegroundColor Red
+            Swipe-Up
+            Start-Sleep -Seconds 2
+            continue
+        }
+        Write-Host "  >> 正常视频" -ForegroundColor Green
     }
-    Write-Host "  >> 正常视频" -ForegroundColor Green
 
     $actions = @()
     if ($doLike) { $actions += "like" }
