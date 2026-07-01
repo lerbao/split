@@ -4,7 +4,7 @@ sleep(500);
 // ==================== 配置 ====================
 var WATCH_TIME = 3000;   // 看视频时间 (ms)
 var REST_TIME = 10000;   // 低亮度休息时间 (ms)
-var DIM_BRIGHTNESS = 10; // 休息时亮度 (0=最暗, 建议5~20避免完全看不见)
+var DIM_BRIGHTNESS = 0;  // 休息时亮度 (0=最暗)
 
 // 滑动参数
 var minX = 100, maxX = 900;
