@@ -13,12 +13,21 @@ var minDur = 300, maxDur = 800;
 // ==================== 停止控制 ====================
 events.observeKey();
 events.onKeyDown("volume_down", function(event) {
-    device.setBrightness(255); // 恢复亮度再退出
+    // 恢复自动亮度 + 最大亮度
+    try { shell("settings put system screen_brightness 255", false); } catch (e) {}
+    try { shell("settings put system screen_brightness_mode 1", false); } catch (e) {}
     toast("滑动已停止");
     engines.stopAll();
     event.consumed = true;
 });
 
+// ==================== 初始化（关自动亮度） ====================
+try {
+    shell("settings put system screen_brightness_mode 0", false);
+    shell("settings put system screen_brightness 255", false);
+} catch (e) {
+    toast("亮度控制需要shell权限，降亮度可能无效");
+}
 toast("省电滑动已启动 | 音量-停止");
 
 // ==================== 工具函数 ====================
@@ -26,15 +35,16 @@ function rand(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-var prevBrightness = 255;
-
 function dimScreen() {
-    prevBrightness = device.getBrightness();
-    device.setBrightness(DIM_BRIGHTNESS);
+    try {
+        shell("settings put system screen_brightness " + DIM_BRIGHTNESS, false);
+    } catch (e) {}
 }
 
 function restoreScreen() {
-    device.setBrightness(prevBrightness);
+    try {
+        shell("settings put system screen_brightness 255", false);
+    } catch (e) {}
 }
 
 // ==================== 主循环 ====================
