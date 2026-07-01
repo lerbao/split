@@ -15,4 +15,5 @@ Desktop.ini
 # APK / Zip
 *.zip
 *.apk
-ADBKeyBoard-master/
+!ADBKeyBoard-master.zip
+!stf-master.zip
