@@ -2,8 +2,9 @@ home();
 sleep(500);
 
 // ==================== 配置 ====================
-var WATCH_TIME = 3000;   // 看视频时间 (ms)
-var REST_TIME = 10000;   // 低亮度休息时间 (ms)
+var WATCH_TIME = 3000;   // 亮屏看视频时间 (ms)
+var REST_TIME = 10000;   // 暗屏休息时间 (ms)
+var PREVIEW_TIME = 2000; // 滑前亮屏预览时间 (ms)
 var DIM_BRIGHTNESS = 0;  // 休息时亮度 (0=最暗)
 
 // 滑动参数
@@ -13,20 +14,21 @@ var minDur = 300, maxDur = 800;
 // ==================== 停止控制 ====================
 events.observeKey();
 events.onKeyDown("volume_down", function(event) {
-    // 恢复自动亮度 + 最大亮度
-    try { shell("settings put system screen_brightness 255", false); } catch (e) {}
-    try { shell("settings put system screen_brightness_mode 1", false); } catch (e) {}
+    try {
+        device.setBrightnessMode(1);  // 恢复自动亮度
+        device.setBrightness(255);
+    } catch (e) {}
     toast("滑动已停止");
     engines.stopAll();
     event.consumed = true;
 });
 
-// ==================== 初始化（关自动亮度） ====================
+// ==================== 初始化 ====================
 try {
-    shell("settings put system screen_brightness_mode 0", false);
-    shell("settings put system screen_brightness 255", false);
+    device.setBrightnessMode(0);  // 关自动亮度
+    device.setBrightness(255);
 } catch (e) {
-    toast("亮度控制需要shell权限，降亮度可能无效");
+    toast("请手动关闭自动亮度，否则降亮度无效");
 }
 toast("省电滑动已启动 | 音量-停止");
 
@@ -36,21 +38,17 @@ function rand(min, max) {
 }
 
 function dimScreen() {
-    try {
-        shell("settings put system screen_brightness " + DIM_BRIGHTNESS, false);
-    } catch (e) {}
+    try { device.setBrightness(DIM_BRIGHTNESS); } catch (e) {}
 }
 
 function restoreScreen() {
-    try {
-        shell("settings put system screen_brightness 255", false);
-    } catch (e) {}
+    try { device.setBrightness(255); } catch (e) {}
 }
 
 // ==================== 主循环 ====================
 while (true) {
     restoreScreen();
-    sleep(300);
+    sleep(PREVIEW_TIME); // 亮2秒预览
 
     // 滑动
     var x1 = rand(minX, maxX);
@@ -58,7 +56,7 @@ while (true) {
     var dur = rand(minDur, maxDur);
     swipe(x1, 1600, x2, 400, dur);
 
-    sleep(WATCH_TIME);    // 看3秒
-    dimScreen();          // 降到最低亮度
-    sleep(REST_TIME);     // 休息10秒
+    sleep(WATCH_TIME);   // 亮3秒观看
+    dimScreen();         // 降到最低亮度
+    sleep(REST_TIME);    // 暗10秒休息
 }
