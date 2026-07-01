@@ -1,6 +1,7 @@
 ﻿# 抖音自动刷视频，数字参数控制互动类型，按 Ctrl+C 停止
 # 用法:
-#   1=点赞  2=收藏  3=评论  自由组合  s=不滑动
+#   0=只滑动  1=点赞  2=收藏  3=评论  自由组合  s=不滑动
+#   .\douyin_bot.ps1 0       只滑动，不互动
 #   .\douyin_bot.ps1 1       只点赞
 #   .\douyin_bot.ps1 2       只收藏
 #   .\douyin_bot.ps1 3       只评论
@@ -48,6 +49,7 @@ $flowDesc = @()
 if ($doLike) { $flowDesc += "点赞" }
 if ($doCollect) { $flowDesc += "收藏" }
 if ($doComment) { $flowDesc += "评论" }
+if ($flowDesc.Count -eq 0) { $flowDesc += "只滑动" }
 $flowStr = $flowDesc -join " -> "
 
 Write-Host "========================================" -ForegroundColor Cyan
@@ -122,7 +124,7 @@ function Do-Comment {
     Write-Host "  >> 等待键盘弹出 ${d2}ms..."
     Start-Sleep -Milliseconds $d2
 
-    # 切换到ADBKeyboard，输入后切回搜狗
+    # 切换到ADBKeyboard输入
     Write-Host "  >> 切换输入法到ADBKeyboard..."
     adb shell ime enable com.android.adbkeyboard/.AdbIME
     adb shell ime set com.android.adbkeyboard/.AdbIME
@@ -131,25 +133,25 @@ function Do-Comment {
     $text = Get-Random -InputObject $comments
     Write-Host "  >> 评论 - 输入: $text"
     adb shell am broadcast -a ADB_INPUT_TEXT --es msg $text
-    $d3 = Get-Random -Minimum 1000 -Maximum 2000
+    $d3 = Get-Random -Minimum 800 -Maximum 1500
     Write-Host "  >> 等待输入完成 ${d3}ms..."
     Start-Sleep -Milliseconds $d3
 
-    # 方式1：ADBKeyboard回车键发送
-    Write-Host "  >> 评论 - 发送 (回车键)"
-    adb shell am broadcast -a ADB_INPUT_CODE --ei code 66
-    $d4 = Get-Random -Minimum 800 -Maximum 1500
+    # BACK关闭键盘，此时发送按钮出现
+    Write-Host "  >> 关闭键盘，露出发送按钮..."
+    adb shell input keyevent BACK
+    Start-Sleep -Milliseconds 1000
+
+    # 点击发送按钮
+    $sx = RandomOffset $SEND_X 30
+    $sy = RandomOffset $SEND_Y 30
+    Write-Host "  >> 评论 - 发送 ($sx,$sy)"
+    adb shell input tap $sx $sy
+    $d4 = Get-Random -Minimum 1500 -Maximum 2500
     Write-Host "  >> 等待发送完成 ${d4}ms..."
     Start-Sleep -Milliseconds $d4
 
-    # 方式2：如果回车没生效，点发送按钮
-    $sx = RandomOffset $SEND_X 30
-    $sy = RandomOffset $SEND_Y 30
-    Write-Host "  >> 评论 - 备用发送按钮 ($sx,$sy)"
-    adb shell input tap $sx $sy
-    Start-Sleep -Milliseconds 1500
-
-    # 发送后再切回搜狗输入法
+    # 切回搜狗（恢复默认输入法）
     Write-Host "  >> 切换输入法回搜狗..."
     adb shell ime enable com.yushixing.accessibility/com.sohu.inputmethod.sogou.TrimeIME
     adb shell ime set com.yushixing.accessibility/com.sohu.inputmethod.sogou.TrimeIME
