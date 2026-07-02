@@ -5,7 +5,8 @@ sleep(500);
 var WATCH_TIME = 3000;   // 亮屏看视频时间 (ms)
 var REST_TIME = 10000;   // 暗屏休息时间 (ms)
 var PREVIEW_TIME = 2000; // 滑前亮屏预览时间 (ms)
-var DIM_BRIGHTNESS = 0;  // 休息时亮度 (0=最暗)
+var DIM_BRIGHTNESS = 0;   // 休息时亮度 (0=最暗)
+var BRIGHT_BRIGHTNESS = 20; // 亮屏时亮度 (20=很暗，255=最亮)
 
 // 滑动参数
 var minX = 100, maxX = 900;
@@ -16,7 +17,7 @@ events.observeKey();
 events.onKeyDown("volume_down", function(event) {
     try {
         device.setBrightnessMode(1);  // 恢复自动亮度
-        device.setBrightness(255);
+        device.setBrightness(BRIGHT_BRIGHTNESS);
     } catch (e) {}
     toast("滑动已停止");
     engines.stopAll();
@@ -26,7 +27,7 @@ events.onKeyDown("volume_down", function(event) {
 // ==================== 初始化 ====================
 try {
     device.setBrightnessMode(0);  // 关自动亮度
-    device.setBrightness(255);
+    device.setBrightness(BRIGHT_BRIGHTNESS);
 } catch (e) {
     toast("请手动关闭自动亮度，否则降亮度无效");
 }
@@ -42,7 +43,7 @@ function dimScreen() {
 }
 
 function restoreScreen() {
-    try { device.setBrightness(255); } catch (e) {}
+    try { device.setBrightness(BRIGHT_BRIGHTNESS); } catch (e) {}
 }
 
 // ==================== 主循环 ====================
